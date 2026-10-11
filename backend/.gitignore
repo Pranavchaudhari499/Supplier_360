@@ -1,0 +1,63 @@
+# =============================================================
+# Python / FastAPI Backend .gitignore
+# =============================================================
+
+# --- Environment Variables & Secrets ---
+.env
+.env.*
+.env.local
+!.env.example
+
+# --- Python Bytecode & Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# --- Virtual Environments ---
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# --- Local Databases ---
+*.db
+*.sqlite
+*.sqlite3
+supplier360.db
+
+# --- Uploads & Dynamic Data ---
+data/contracts/*
+!data/contracts/.gitkeep
+uploads/
+temp/
+*.log
+
+# --- Testing & Coverage ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# --- Type Checking & Linters ---
+.mypy_cache/
+.ruff_cache/
+.pytype/
+
+# --- Packaging & Builds ---
+build/
+dist/
+*.egg-info/
+*.egg
+
+# --- IDEs & OS Files ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

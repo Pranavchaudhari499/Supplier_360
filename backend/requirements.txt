@@ -1,0 +1,55 @@
+# Core
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+python-multipart==0.0.20
+pydantic==2.11.3
+pydantic-settings==2.9.1
+
+# Database
+sqlalchemy[asyncio]==2.0.41
+asyncpg==0.30.0
+psycopg2-binary==2.9.10
+alembic==1.15.2
+
+# Vector DB
+qdrant-client==1.14.2
+
+# LLM & RAG
+langchain==0.3.25
+langchain-core==0.3.61
+langchain-groq==0.3.2
+langchain-community==0.3.24
+langgraph==0.4.8
+
+# Embeddings
+sentence-transformers==4.1.0
+
+# Reranker
+transformers==4.52.4
+
+# PDF Processing
+PyMuPDF==1.25.5
+pypdf>=4.0.0
+pdfplumber>=0.11.0
+
+# BM25
+rank-bm25==0.2.2
+
+# Groq SDK (direct API, used by synthesis & extraction)
+groq>=0.11.0
+
+# SQLite async fallback
+aiosqlite>=0.20.0
+
+# Data Processing
+pandas==2.2.3
+numpy==2.2.6
+
+# Testing
+pytest==8.4.0
+pytest-asyncio==1.0.0
+httpx==0.28.1
+
+# Utilities
+python-dotenv==1.1.0
+aiofiles==24.1.0

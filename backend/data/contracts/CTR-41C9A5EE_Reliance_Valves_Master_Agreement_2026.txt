@@ -1,0 +1,29 @@
+
+        MASTER INDUSTRIAL SUPPLY AGREEMENT
+        BETWEEN: Enterprise Procurement Corp ("Buyer")
+        AND: Reliance Industrial Valves Ltd ("Supplier", ID: SUP-013)
+        
+        EFFECTIVE DATE: October 10, 2026.
+        TERM: This agreement shall remain in effect for 3 years.
+        
+        SECTION 1: SCOPE AND SUPPLY OBLIGATIONS
+        Supplier shall manufacture and deliver high-precision industrial control valves according to ISO 9001 standards.
+        
+        SECTION 2: PRICING AND PAYMENT TERMS
+        The contracted base price for Model IV-500 shall be INR 12,450 per unit.
+        Payment terms are Net 45 days upon verified invoice receipt. An advance payment of 10% is required on formal order placement.
+        
+        SECTION 3: DELIVERY SLA AND LEAD TIME
+        Supplier commits to a guaranteed lead time of 10 business days from purchase order confirmation.
+        Minimum Order Quantity (MOQ) is 25 units per production release.
+        
+        SECTION 4: LIQUIDATED DAMAGES AND PENALTY FOR DELAY
+        In the event of unexcused delivery delay beyond the agreed lead time, Supplier agrees to liquidated damages of 1.5% of order value per week of delay, up to a maximum cap of 12%.
+        
+        SECTION 5: WARRANTY AND DEFECT NOTIFICATION
+        Supplier warrants all products against material defects and craftsmanship failures for 36 months from receipt.
+        Buyer shall notify Supplier of defective units within 45 days. Supplier must replace all defective units within 7 business days at no cost to Buyer.
+        
+        SECTION 6: TERMINATION AND RENEWAL
+        Either party may terminate for convenience with 60 days advance written notice. Renewal shall require mutual written consent 30 days prior to expiration.
+        

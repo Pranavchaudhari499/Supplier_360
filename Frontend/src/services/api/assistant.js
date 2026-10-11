@@ -1,15 +1,24 @@
 // ============================================================
 // ASSISTANT SERVICE
-// Future: POST /api/assistant/query
+// Connected to FastAPI: POST /api/analysis/assistant/query
 // ============================================================
 
-import { simulateDelay } from './client';
+import { apiPost, simulateDelay } from './client';
 import { mockAssistantResponses } from '../../data/mockData';
 
 export async function sendAssistantMessage(supplierId, message) {
-  // Future: POST /api/assistant/query { supplier_id, message }
-  await simulateDelay(1500); // Simulate AI thinking
+  // Call AI Assistant agent endpoint
+  const res = await apiPost('/analysis/assistant/query', {
+    supplierId,
+    message,
+  });
 
+  if (res && res.status === 'success' && res.data) {
+    return res;
+  }
+
+  // Graceful fallback to rich mock data
+  await simulateDelay(600);
   const lower = message.toLowerCase();
 
   let response;

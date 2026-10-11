@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { FileText, Download, Clock, IndianRupee, Truck, ShieldCheck, AlertCircle } from 'lucide-react';
+import { useOutletContext, Link } from 'react-router-dom';
+import { FileText, Download, Clock, IndianRupee, Truck, ShieldCheck, AlertCircle, Upload } from 'lucide-react';
 import { StatusBadge, EvidenceModal } from '../components/ui';
 import { getContractBySupplier, getEvidence } from '../services';
 
@@ -65,9 +65,11 @@ export default function ContractIntelligence() {
         <FileText size={48} className="empty-state-icon" />
         <div className="empty-state-title">No Contract Found</div>
         <div className="empty-state-description">
-          There are no active contracts found for this supplier in the system.
+          There are no active contracts found for {supplier.name} ({supplier.id}) in the system.
         </div>
-        <button className="btn btn-primary mt-4">Upload Contract</button>
+        <Link to={`/documents?supplierId=${supplier.id}`} className="btn btn-primary mt-4 flex items-center gap-2">
+          <Upload size={16} /> Upload Contract for {supplier.name}
+        </Link>
       </div>
     );
   }
@@ -87,17 +89,23 @@ export default function ContractIntelligence() {
       />
 
       <div className="card mb-8">
-        <div className="card-header">
+        <div className="card-header flex justify-between items-center">
           <div className="flex items-center gap-4">
             <h2 className="card-title text-xl font-bold">Contract Overview</h2>
             <StatusBadge status={contract.status} />
           </div>
-          {daysRemaining < 90 && (
-            <div className="text-sm font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-full flex items-center gap-2">
-              <Clock size={14} /> Expiring in {daysRemaining} days
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {daysRemaining < 90 && (
+              <div className="text-sm font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-full flex items-center gap-2">
+                <Clock size={14} /> Expiring in {daysRemaining} days
+              </div>
+            )}
+            <Link to={`/documents?supplierId=${supplier.id}`} className="btn btn-secondary btn-sm flex items-center gap-1.5">
+              <Upload size={14} /> Upload New Version
+            </Link>
+          </div>
         </div>
+
         
         <div className="card-body">
           <div className="contract-detail-grid">

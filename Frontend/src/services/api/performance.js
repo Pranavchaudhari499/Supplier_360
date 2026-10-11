@@ -1,13 +1,18 @@
 // ============================================================
 // PERFORMANCE SERVICE
-// Future: GET /api/suppliers/{id}/performance
+// Connected to FastAPI: GET /api/performance/suppliers/{id}/performance
 // ============================================================
 
-import { simulateDelay } from './client';
+import { apiGet, simulateDelay } from './client';
 import { mockPerformance } from '../../data/mockData';
 
 export async function getPerformanceBySupplier(supplierId) {
-  await simulateDelay(300);
+  const res = await apiGet(`/performance/suppliers/${supplierId}/performance`);
+  if (res && res.status === 'success' && res.data) {
+    return res;
+  }
+
+  await simulateDelay(200);
   const perf = mockPerformance.find((p) => p.supplierId === supplierId);
   if (!perf) {
     return { status: 'error', data: null, message: 'No performance data found' };
@@ -16,6 +21,11 @@ export async function getPerformanceBySupplier(supplierId) {
 }
 
 export async function getAllPerformance() {
-  await simulateDelay(300);
+  const res = await apiGet('/performance');
+  if (res && res.status === 'success' && Array.isArray(res.data)) {
+    return res;
+  }
+
+  await simulateDelay(200);
   return { status: 'success', data: mockPerformance };
 }

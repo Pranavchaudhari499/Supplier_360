@@ -1,13 +1,18 @@
 // ============================================================
 // PURCHASES SERVICE
-// Future: GET /api/suppliers/{id}/purchases
+// Connected to FastAPI: GET /api/purchases/suppliers/{id}/purchases
 // ============================================================
 
-import { simulateDelay } from './client';
+import { apiGet, simulateDelay } from './client';
 import { mockPurchases, mockPurchaseSummaries } from '../../data/mockData';
 
 export async function getPurchasesBySupplier(supplierId, filters = {}) {
-  await simulateDelay(300);
+  const res = await apiGet(`/purchases/suppliers/${supplierId}/purchases`, filters);
+  if (res && res.status === 'success' && Array.isArray(res.data) && res.data.length > 0) {
+    return res;
+  }
+
+  await simulateDelay(200);
   let purchases = mockPurchases.filter((p) => p.supplierId === supplierId);
 
   if (filters.product) {
@@ -27,7 +32,12 @@ export async function getPurchasesBySupplier(supplierId, filters = {}) {
 }
 
 export async function getPurchaseSummaryBySupplier(supplierId) {
-  await simulateDelay(300);
+  const res = await apiGet(`/purchases/suppliers/${supplierId}/purchases/summary`);
+  if (res && res.status === 'success' && res.data) {
+    return res;
+  }
+
+  await simulateDelay(200);
   const summary = mockPurchaseSummaries[supplierId] || [];
   return { status: 'success', data: summary };
 }

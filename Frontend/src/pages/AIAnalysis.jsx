@@ -1,17 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, Link } from 'react-router-dom';
 import { 
   FileText, BarChart3, IndianRupee, RefreshCw, MessageSquare, 
-  Send, CheckCircle, AlertTriangle, Info, Bot
+  Send, CheckCircle, AlertTriangle, Info, Bot, Upload, Sparkles
 } from 'lucide-react';
 import { EvidenceModal } from '../components/ui';
-import { runAnalysis, sendAssistantMessage } from '../services';
+import { runAnalysis, sendAssistantMessage, getContractBySupplier } from '../services';
 
 export default function AIAnalysis() {
   const { supplier } = useOutletContext();
   const [activeAnalysis, setActiveAnalysis] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [activeContract, setActiveContract] = useState(null);
   
   // Chat state
   const [chatOpen, setChatOpen] = useState(false);
@@ -30,6 +31,23 @@ export default function AIAnalysis() {
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [evidenceData, setEvidenceData] = useState([]);
   const [evidenceTitle, setEvidenceTitle] = useState('');
+
+  useEffect(() => {
+    async function checkContract() {
+      try {
+        const res = await getContractBySupplier(supplier.id);
+        if (res.status === 'success' && res.data) {
+          setActiveContract(res.data);
+        } else {
+          setActiveContract(null);
+        }
+      } catch (err) {
+        setActiveContract(null);
+      }
+    }
+    checkContract();
+  }, [supplier.id]);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -114,6 +132,41 @@ export default function AIAnalysis() {
         title={evidenceTitle}
         evidence={evidenceData}
       />
+
+      {/* Grounding Info Bar */}
+      <div className="card mb-6 bg-gradient-to-r from-blue-50/70 via-indigo-50/70 to-purple-50/70 border border-blue-200">
+        <div className="card-body p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Bot size={22} />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 flex items-center gap-2">
+                <span>Agentic AI Grounding: {supplier.name}</span>
+                <span className="badge badge-info">{supplier.id}</span>
+              </div>
+              <div className="text-xs text-gray-600 mt-1 flex flex-wrap items-center gap-2">
+                <span>Contract Source:</span>
+                {activeContract ? (
+                  <span className="font-semibold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                    <CheckCircle size={12} /> {activeContract.contractTitle || activeContract.documents?.[0]?.name || 'Active Contract Document'}
+                  </span>
+                ) : (
+                  <span className="font-medium text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                    <AlertTriangle size={12} /> No Contract Uploaded Yet (Using baseline profile)
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <Link
+            to={`/documents?supplierId=${supplier.id}`}
+            className="btn btn-secondary btn-sm flex items-center justify-center gap-1.5 whitespace-nowrap self-start sm:self-auto"
+          >
+            <Upload size={14} /> {activeContract ? 'Upload New Contract Version' : 'Upload Contract for this Supplier'}
+          </Link>
+        </div>
+      </div>
 
       {!activeAnalysis && !chatOpen ? (
         <div className="action-card-grid">

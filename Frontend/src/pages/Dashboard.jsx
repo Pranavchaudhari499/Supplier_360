@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Users, 
-  FileText, 
-  AlertTriangle, 
+import {
+  Users,
+  FileText,
+  AlertTriangle,
   IndianRupee,
   Activity,
   Award,
   ChevronRight
 } from 'lucide-react';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   BarChart,
   Bar
@@ -35,7 +35,7 @@ export default function Dashboard() {
           getDashboardMetrics(),
           getDashboardCharts()
         ]);
-        
+
         if (metricsRes.status === 'success') setMetrics(metricsRes.data);
         if (chartsRes.status === 'success') setCharts(chartsRes.data);
       } catch (error) {
@@ -44,7 +44,7 @@ export default function Dashboard() {
         setLoading(false);
       }
     }
-    
+
     loadData();
   }, []);
 
@@ -67,32 +67,32 @@ export default function Dashboard() {
       </div>
 
       <div className="kpi-grid mb-8">
-        <KPICard 
-          title="Total Active Suppliers" 
-          value={metrics.activeSuppliers} 
-          icon={Users} 
+        <KPICard
+          title="Total Active Suppliers"
+          value={metrics.activeSuppliers}
+          icon={Users}
           type="primary"
           subtitle={`Out of ${metrics.totalSuppliers} total registered`}
         />
-        <KPICard 
-          title="Contracts Expiring (90d)" 
-          value={metrics.contractsExpiringSoon} 
-          icon={FileText} 
+        <KPICard
+          title="Contracts Expiring (90d)"
+          value={metrics.contractsExpiringSoon}
+          icon={FileText}
           type="warning"
           subtitle={`${metrics.activeContracts} total active contracts`}
         />
-        <KPICard 
-          title="Avg On-Time Delivery" 
-          value={`${metrics.avgOnTimeDelivery}%`} 
-          icon={Activity} 
+        <KPICard
+          title="Avg On-Time Delivery"
+          value={`${metrics.avgOnTimeDelivery}%`}
+          icon={Activity}
           type={metrics.avgOnTimeDelivery > 90 ? 'success' : 'warning'}
           change="-2.4%"
           changeType="negative"
         />
-        <KPICard 
-          title="Avg Defect Rate" 
-          value={`${metrics.avgDefectRate}%`} 
-          icon={Award} 
+        <KPICard
+          title="Avg Defect Rate"
+          value={`${metrics.avgDefectRate}%`}
+          icon={Award}
           type={metrics.avgDefectRate < 2 ? 'success' : 'error'}
           change="+0.1%"
           changeType="negative"
@@ -110,20 +110,20 @@ export default function Dashboard() {
                 <LineChart data={charts.spendTrend} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
                     tick={{ fill: '#6B7280', fontSize: 12 }}
                     tickFormatter={(value) => `₹${(value / 100000).toFixed(1)}L`}
                   />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value) => [`₹${value.toLocaleString()}`, 'Spend']}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="spend" 
-                    stroke="#4F46E5" 
+                  <Line
+                    type="monotone"
+                    dataKey="spend"
+                    stroke="#4F46E5"
                     strokeWidth={3}
                     dot={{ r: 4, strokeWidth: 2, fill: 'white' }}
                     activeDot={{ r: 6, fill: '#4F46E5' }}
@@ -141,15 +141,14 @@ export default function Dashboard() {
           <div className="card-body p-0">
             <div className="flex flex-col h-full">
               {charts.attentionItems.map((item, index) => (
-                <Link 
-                  to={`/suppliers/${item.supplierId}/overview`} 
+                <Link
+                  to={`/suppliers/${item.supplierId}/overview`}
                   key={index}
                   className="flex items-start gap-3 p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors last:border-0"
                 >
-                  <div className={`mt-0.5 ${
-                    item.severity === 'error' ? 'text-red-500' : 
-                    item.severity === 'warning' ? 'text-amber-500' : 'text-blue-500'
-                  }`}>
+                  <div className={`mt-0.5 ${item.severity === 'error' ? 'text-red-500' :
+                      item.severity === 'warning' ? 'text-amber-500' : 'text-blue-500'
+                    }`}>
                     <AlertTriangle size={18} />
                   </div>
                   <div>
@@ -180,7 +179,7 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} domain={[0, 100]} />
-                <Tooltip 
+                <Tooltip
                   cursor={{ fill: '#F3F4F6' }}
                   contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB' }}
                 />
