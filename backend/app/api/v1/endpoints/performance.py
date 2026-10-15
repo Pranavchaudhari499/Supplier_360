@@ -17,29 +17,46 @@ router = APIRouter()
 @router.get("/suppliers/{supplier_id}/performance", response_model=APIResponse)
 async def get_supplier_performance(supplier_id: str, db: AsyncSession = Depends(get_db)):
     kpis = await sql_retriever.get_performance_kpis(db, supplier_id)
+    trends = await sql_retriever.get_monthly_performance_trends(db, supplier_id)
 
     otd = kpis.get("on_time_delivery_rate_pct", 92.0)
     defect = kpis.get("defect_rate_pct", 0.8)
+    total_deliv = kpis.get("total_deliveries", 4)
+    total_orders = kpis.get("total_orders", 4)
+    total_inspected = kpis.get("total_inspected", 450)
+    total_defective = kpis.get("total_defective", 3)
+    avg_delay = kpis.get("avg_delay_days", 1.5)
 
-    # Monthly trends matching frontend charts
-    trends = [
-        {"month": "Apr", "onTimeDelivery": 94, "qualityScore": 99.1, "defectRate": 0.9, "spend": 45000},
-        {"month": "May", "onTimeDelivery": 91, "qualityScore": 98.8, "defectRate": 1.2, "spend": 52000},
-        {"month": "Jun", "onTimeDelivery": 95, "qualityScore": 99.4, "defectRate": 0.6, "spend": 48000},
-        {"month": "Jul", "onTimeDelivery": 88, "qualityScore": 98.2, "defectRate": 1.8, "spend": 61000},
-        {"month": "Aug", "onTimeDelivery": 92, "qualityScore": 99.0, "defectRate": 1.0, "spend": 54000},
-        {"month": "Sep", "onTimeDelivery": int(otd), "qualityScore": round(100.0 - defect, 1), "defectRate": defect, "spend": 58000},
-    ]
+    on_time_count = int(round(total_deliv * (otd / 100.0)))
+    late_count = max(0, total_deliv - on_time_count)
+
+    delivery_trend = "declining" if otd < 90 else ("improving" if otd >= 95 else "stable")
+    quality_trend = "declining" if defect > 1.5 else ("improving" if defect < 0.5 else "stable")
 
     data = {
         "supplierId": supplier_id,
+        "onTimeRate": otd,
         "onTimeDelivery": otd,
-        "qualityScore": round(100.0 - defect, 1),
+        "defectRate": defect,
         "returnRate": defect,
-        "slaBreaches": 1 if otd < 95 else 0,
+        "qualityScore": round(100.0 - defect, 1),
+        "slaBreaches": late_count,
         "averageLeadTimeDays": 14,
-        "totalOrders": kpis.get("total_orders", 4),
+        "averageDelayDays": avg_delay,
+        "deliveryTrend": delivery_trend,
+        "qualityTrend": quality_trend,
+        "priceTrend": "stable",
+        "totalOrders": total_orders,
         "totalSpend": kpis.get("total_spend", 135025.0),
+        "totalUnitsReceived": total_inspected,
+        "defectiveUnits": total_defective,
+        "qualityComplaints": 1 if total_defective > 0 else 0,
+        "returns": 1 if total_defective > 0 else 0,
+        "lateDeliveries": late_count,
+        "onTimeDeliveries": on_time_count,
+        "fulfillmentRate": 98.5 if total_orders > 0 else 100.0,
+        "cancellationRate": 0.0,
+        "monthlyTrend": trends,
         "trends": trends,
     }
     return APIResponse(status="success", data=data)
@@ -56,15 +73,41 @@ async def get_all_performance(db: AsyncSession = Depends(get_db)):
         kpis = await sql_retriever.get_performance_kpis(db, sid)
         otd = kpis.get("on_time_delivery_rate_pct", 92.0)
         defect = kpis.get("defect_rate_pct", 0.8)
+        total_deliv = kpis.get("total_deliveries", 4)
+        total_orders = kpis.get("total_orders", 4)
+        total_inspected = kpis.get("total_inspected", 450)
+        total_defective = kpis.get("total_defective", 3)
+        avg_delay = kpis.get("avg_delay_days", 1.5)
+
+        on_time_count = int(round(total_deliv * (otd / 100.0)))
+        late_count = max(0, total_deliv - on_time_count)
+
+        delivery_trend = "declining" if otd < 90 else ("improving" if otd >= 95 else "stable")
+        quality_trend = "declining" if defect > 1.5 else ("improving" if defect < 0.5 else "stable")
+
         all_perf.append({
             "supplierId": sid,
+            "onTimeRate": otd,
             "onTimeDelivery": otd,
-            "qualityScore": round(100.0 - defect, 1),
+            "defectRate": defect,
             "returnRate": defect,
-            "slaBreaches": 1 if otd < 95 else 0,
+            "qualityScore": round(100.0 - defect, 1),
+            "slaBreaches": late_count,
             "averageLeadTimeDays": 14,
-            "totalOrders": kpis.get("total_orders", 4),
+            "averageDelayDays": avg_delay,
+            "deliveryTrend": delivery_trend,
+            "qualityTrend": quality_trend,
+            "priceTrend": "stable",
+            "totalOrders": total_orders,
             "totalSpend": kpis.get("total_spend", 135025.0),
+            "totalUnitsReceived": total_inspected,
+            "defectiveUnits": total_defective,
+            "qualityComplaints": 1 if total_defective > 0 else 0,
+            "returns": 1 if total_defective > 0 else 0,
+            "lateDeliveries": late_count,
+            "onTimeDeliveries": on_time_count,
+            "fulfillmentRate": 98.5 if total_orders > 0 else 100.0,
+            "cancellationRate": 0.0,
         })
 
     return APIResponse(status="success", data=all_perf)
