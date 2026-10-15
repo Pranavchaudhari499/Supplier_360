@@ -1,37 +1,40 @@
-import { useState, useEffect } from 'react';
-import { useOutletContext, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useOutletContext, Link, useNavigate } from 'react-router-dom';
 import { 
   FileText, 
   Truck, 
   ShieldCheck, 
-  IndianRupee,
-  Calendar,
-  Phone,
-  Mail,
+  IndianRupee, 
+  AlertTriangle,
   User,
-  ExternalLink
+  Mail,
+  Phone,
+  Calendar
 } from 'lucide-react';
 import { KPICard, AttentionAlert } from '../components/ui';
-import { getContractBySupplier, getPerformanceBySupplier } from '../services';
+import { getContractBySupplier, getPerformanceBySupplier, getPurchasesBySupplier } from '../services';
 
 export default function SupplierOverview() {
   const { supplier } = useOutletContext();
   const navigate = useNavigate();
   const [contract, setContract] = useState(null);
   const [performance, setPerformance] = useState(null);
+  const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const [contRes, perfRes] = await Promise.all([
+        const [contRes, perfRes, purchRes] = await Promise.all([
           getContractBySupplier(supplier.id),
-          getPerformanceBySupplier(supplier.id)
+          getPerformanceBySupplier(supplier.id),
+          getPurchasesBySupplier(supplier.id)
         ]);
         
-        if (contRes.status === 'success') setContract(contRes.data);
-        if (perfRes.status === 'success') setPerformance(perfRes.data);
+        if (contRes?.status === 'success') setContract(contRes.data);
+        if (perfRes?.status === 'success') setPerformance(perfRes.data);
+        if (purchRes?.status === 'success') setPurchases(purchRes.data);
       } catch (error) {
         console.error("Failed to load overview data:", error);
       } finally {
@@ -52,14 +55,24 @@ export default function SupplierOverview() {
 
   // Calculate days remaining for contract
   let daysRemaining = null;
-  if (contract) {
+  if (contract?.expiryDate) {
     const today = new Date();
     const expiry = new Date(contract.expiryDate);
     const diffTime = expiry - today;
     daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
 
-  const needsAttention = supplier.riskScore > 60 || (daysRemaining && daysRemaining < 60) || (performance && performance.onTimeRate < 85);
+  const onTimeVal = performance?.onTimeRate ?? performance?.onTimeDelivery;
+  const defectVal = performance?.defectRate ?? performance?.returnRate;
+
+  // Dynamic Attention Required criteria
+  const hasRenewalWarning = daysRemaining !== null && daysRemaining < 60;
+  const hasDeliveryWarning = onTimeVal !== undefined && onTimeVal < 85;
+  const hasQualityWarning = defectVal !== undefined && defectVal > 1.5;
+  const hasPriceWarning = performance?.priceTrend === 'increasing';
+  const hasRiskWarning = supplier?.riskScore > 60;
+
+  const needsAttention = hasRenewalWarning || hasDeliveryWarning || hasQualityWarning || hasPriceWarning || hasRiskWarning;
 
   return (
     <div className="animate-fade-in">
@@ -69,21 +82,21 @@ export default function SupplierOverview() {
           value={contract ? 'Active' : 'None'} 
           icon={FileText} 
           type="info"
-          subtitle={contract ? `Expires in ${daysRemaining} days` : 'No active contract'}
+          subtitle={contract ? (daysRemaining ? `Expires in ${daysRemaining} days` : 'Active contract') : 'No active contract'}
         />
         <KPICard 
           title="On-Time Delivery" 
-          value={performance ? `${performance.onTimeRate}%` : 'N/A'} 
+          value={onTimeVal !== undefined && onTimeVal !== null ? `${onTimeVal}%` : 'N/A'} 
           icon={Truck} 
-          type={performance?.onTimeRate >= 90 ? 'success' : 'warning'}
+          type={onTimeVal >= 90 ? 'success' : 'warning'}
           change={performance ? (performance.deliveryTrend === 'improving' ? 'Improving' : performance.deliveryTrend === 'declining' ? 'Declining' : 'Stable') : null}
           changeType={performance ? (performance.deliveryTrend === 'improving' ? 'positive' : performance.deliveryTrend === 'declining' ? 'negative' : 'neutral') : null}
         />
         <KPICard 
           title="Defect Rate" 
-          value={performance ? `${performance.defectRate}%` : 'N/A'} 
+          value={defectVal !== undefined && defectVal !== null ? `${defectVal}%` : 'N/A'} 
           icon={ShieldCheck} 
-          type={performance?.defectRate < 2 ? 'success' : 'error'}
+          type={defectVal < 2 ? 'success' : 'error'}
           change={performance ? (performance.qualityTrend === 'improving' ? 'Improving' : performance.qualityTrend === 'declining' ? 'Declining' : 'Stable') : null}
           changeType={performance ? (performance.qualityTrend === 'improving' ? 'positive' : performance.qualityTrend === 'declining' ? 'negative' : 'neutral') : null}
         />
@@ -103,15 +116,21 @@ export default function SupplierOverview() {
               title="Attention Required" 
               type="warning"
             >
-              <ul className="mb-4">
-                {daysRemaining && daysRemaining < 60 && (
+              <ul className="mb-4 space-y-1">
+                {hasRenewalWarning && (
                   <li>Contract renewal approaching in {daysRemaining} days.</li>
                 )}
-                {performance && performance.onTimeRate < 85 && (
-                  <li>Delivery performance has dropped below the 85% acceptable threshold.</li>
+                {hasDeliveryWarning && (
+                  <li>Delivery performance ({onTimeVal}%) has dropped below the 85% acceptable threshold.</li>
                 )}
-                {performance && performance.priceTrend === 'increasing' && (
+                {hasQualityWarning && (
+                  <li>Defect rate ({defectVal}%) exceeds the 1.5% quality tolerance limit.</li>
+                )}
+                {hasPriceWarning && (
                   <li>Supplier pricing shows an increasing trend.</li>
+                )}
+                {hasRiskWarning && (
+                  <li>Supplier composite risk score is elevated ({supplier.riskScore}/100).</li>
                 )}
               </ul>
               <button 
@@ -129,27 +148,35 @@ export default function SupplierOverview() {
             </div>
             <div className="card-body">
               <div className="relative border-l border-gray-200 ml-3 py-2">
-                <div className="mb-6 ml-6 relative">
-                  <span className="absolute -left-[31px] top-1 h-4 w-4 rounded-full bg-blue-500 border-4 border-white"></span>
-                  <div className="text-sm font-medium text-gray-800">Last Order Placed</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {new Date(supplier.lastOrderDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {purchases && purchases.length > 0 ? (
+                  purchases.slice(0, 3).map((po, idx) => {
+                    const isDelivered = po.status === 'delivered';
+                    const isFlagged = po.qualityInspection === 'flagged' || (po.delayedDays && po.delayedDays > 0);
+                    const dotColor = isFlagged ? 'bg-amber-500' : (isDelivered ? 'bg-green-500' : 'bg-blue-500');
+                    const title = `Purchase Order ${po.orderNumber || po.id} • ${po.product}`;
+                    const formattedDate = po.orderDate ? new Date(po.orderDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recent';
+                    const amountFormatted = po.totalAmount ? `₹${Number(po.totalAmount).toLocaleString('en-IN')}` : '';
+                    
+                    return (
+                      <div key={po.id || idx} className="mb-6 ml-6 relative">
+                        <span className={`absolute -left-[31px] top-1 h-4 w-4 rounded-full ${dotColor} border-4 border-white`}></span>
+                        <div className="text-sm font-medium text-gray-800">{title}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {formattedDate} {amountFormatted ? `• ${amountFormatted}` : ''} • Status: <span className="capitalize">{po.status}</span>
+                          {isFlagged ? ` (${po.delayedDays} days delay)` : ''}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="mb-6 ml-6 relative">
+                    <span className="absolute -left-[31px] top-1 h-4 w-4 rounded-full bg-blue-500 border-4 border-white"></span>
+                    <div className="text-sm font-medium text-gray-800">Last Order Placed</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {supplier.lastOrderDate ? new Date(supplier.lastOrderDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'No recent orders'}
+                    </div>
                   </div>
-                </div>
-                <div className="mb-6 ml-6 relative">
-                  <span className="absolute -left-[31px] top-1 h-4 w-4 rounded-full bg-green-500 border-4 border-white"></span>
-                  <div className="text-sm font-medium text-gray-800">Payment Processed</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    15 Sep 2026 • ₹4,25,000
-                  </div>
-                </div>
-                <div className="mb-6 ml-6 relative">
-                  <span className="absolute -left-[31px] top-1 h-4 w-4 rounded-full bg-amber-500 border-4 border-white"></span>
-                  <div className="text-sm font-medium text-gray-800">Quality Incident Logged</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    02 Sep 2026 • Minor packaging defect reported
-                  </div>
-                </div>
+                )}
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100 text-center">
                 <Link to={`/suppliers/${supplier.id}/purchases`} className="text-sm text-primary-600 font-medium hover:text-primary-700">

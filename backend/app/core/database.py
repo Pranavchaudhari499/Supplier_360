@@ -1,6 +1,6 @@
 """
-SQLAlchemy async engine and session factory with automatic SQLite fallback
-if PostgreSQL is offline or Docker is not running.
+SQLAlchemy async engine and session factory configured for PostgreSQL (Neon-ready).
+Explicit error reporting when PostgreSQL is unavailable (no silent SQLite fallback).
 """
 
 import logging
@@ -17,58 +17,58 @@ class Base(DeclarativeBase):
     pass
 
 
-import socket
+def _create_engine_for_url(db_url: str):
+    connect_args = {}
+    if "asyncpg" in db_url:
+        connect_args["timeout"] = 10.0
+        if "neon.tech" in db_url or "ssl=require" in db_url or "sslmode=require" in db_url:
+            connect_args["ssl"] = "require"
 
-SQLITE_FALLBACK_URL = "sqlite+aiosqlite:///./supplier360.db"
+    # Remove query string if asyncpg ssl was set via connect_args to avoid duplicate/conflicting param
+    clean_url = db_url
+    if "?" in clean_url and "asyncpg" in clean_url:
+        base_part, query_part = clean_url.split("?", 1)
+        # Keep non-ssl query params if any
+        params = [p for p in query_part.split("&") if not p.startswith("ssl")]
+        clean_url = f"{base_part}?{'&'.join(params)}" if params else base_part
+
+    return create_async_engine(
+        clean_url,
+        echo=settings.DEBUG,
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20,
+        connect_args=connect_args,
+    )
 
 
-def _is_pg_reachable() -> bool:
-    try:
-        with socket.create_connection(("localhost", 5432), timeout=0.3):
-            return True
-    except (socket.timeout, ConnectionRefusedError, OSError):
-        return False
-
-
-_current_url = settings.DATABASE_URL if _is_pg_reachable() else SQLITE_FALLBACK_URL
-engine = create_async_engine(
-    _current_url,
-    echo=settings.DEBUG,
-    pool_pre_ping=True,
-    connect_args={"timeout": 1.5} if "asyncpg" in _current_url else {},
-)
+_current_url = settings.async_database_url
+engine = _create_engine_for_url(_current_url)
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 async def ensure_active_engine():
-    """Verify database connection; seamlessly switch to local SQLite if PostgreSQL is unreachable."""
-    global engine, async_session_factory, _current_url
-
-    if _current_url == SQLITE_FALLBACK_URL:
-        return engine
-
-    if not _is_pg_reachable():
-        logger.info("PostgreSQL (localhost:5432) not reachable. Using local SQLite.")
-        _current_url = SQLITE_FALLBACK_URL
-        engine = create_async_engine(_current_url, echo=settings.DEBUG)
-        async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-        return engine
+    """Verify database connection; raise explicit informative error if PostgreSQL is unreachable."""
+    global engine, async_session_factory
 
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         return engine
     except Exception as e:
-        logger.warning(f"PostgreSQL connection to {_current_url} failed ({e}). Switching to local SQLite.")
-        _current_url = SQLITE_FALLBACK_URL
-        engine = create_async_engine(_current_url, echo=settings.DEBUG)
-        async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-        return engine
+        safe_url = _current_url.split("@")[-1] if "@" in _current_url else _current_url
+        error_msg = (
+            f"\n[DATABASE ERROR] Unable to connect to PostgreSQL at host '{safe_url}'.\n"
+            f"Details: {str(e)}\n"
+            f"Please verify your DATABASE_URL in backend/.env is pointing to an active Neon PostgreSQL instance.\n"
+            f"Note: Silent fallback to SQLite is disabled to prevent data drift.\n"
+        )
+        logger.error(error_msg)
+        raise ConnectionError(error_msg) from e
 
 
 async def get_db() -> AsyncSession:
     """FastAPI dependency that yields an active database session."""
-    await ensure_active_engine()
     async with async_session_factory() as session:
         try:
             yield session

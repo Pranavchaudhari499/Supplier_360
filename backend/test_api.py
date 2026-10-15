@@ -1,3 +1,4 @@
+﻿import pytest
 """
 Verification script testing the full backend stack:
 1. Health check
@@ -14,6 +15,7 @@ from httpx import AsyncClient, ASGITransport
 from app.main import app
 
 
+@pytest.mark.asyncio
 async def test_api():
     print("[TEST] Initializing test client...")
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", timeout=30.0) as client:
@@ -77,3 +79,4 @@ async def test_api():
 
 if __name__ == "__main__":
     asyncio.run(test_api())
+
